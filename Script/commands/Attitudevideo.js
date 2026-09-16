@@ -2,7 +2,7 @@ module.exports.config = {
  name: "attitude",
  version: "1.0.0",
  hasPermssion: 0,
- credits: "🔰𝐑𝐀𝐇𝐀𝐓 𝐈𝐒𝐋𝐀𝐌🔰",
+ credits: "🔰𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍🔰",
  description: "attitude video",
  commandCategory: "Hình ảnh",
  usages: "attitude video",
