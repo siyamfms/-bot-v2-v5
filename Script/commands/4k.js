@@ -1,87 +1,111 @@
-const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
+const fs = require("fs-extra");
+const path = require("path");
+const axios = require("axios");
+const { createCanvas, loadImage } = require("canvas");
+
+const API_ENDPOINT = "https://api.badol.ai/v3/dslr-enhance";
+const MODEL_VERSION = "badol-dslr-beauty-v6-natural";
 
 module.exports.config = {
-    name: "4k",
-    version: "1.0",
-    credits: "🔰𝐑𝐀𝐇𝐀𝐓 𝐈𝐒𝐋𝐀𝐌🔰",
-    description: "Upscale image to 4K using API",
-    usages: "!4k (reply to a photo)",
-    commandCategory: "AI",
-    cooldowns: 5
+	name: "4k",
+	version: "6.0",
+	hasPermssion: 0,
+	credits: "𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍",
+	description: "𝐍𝐈𝐉𝐇𝐔𝐌-𝐁𝐎𝐓 Photo to DSLR Beautiful HD - 5 Levels",
+	commandCategory: "image",
+	usages: "[1-5] (ছবিতে রিপ্লাই দিন)",
+	cooldowns: 10
 };
 
-const API_ENDPOINT = "https://free-goat-api.onrender.com/4k";
-
-function extractImageUrl(event) {
-    if (event.messageReply && event.messageReply.attachments?.length > 0) {
-        const img = event.messageReply.attachments.find(
-            a => a.type === "photo" || a.type === "image"
-        );
-        if (img?.url) return img.url;
-    }
-    return null;
+function dslrEnhance(d, level) {
+	let contrast = level === "5" ? 1.22 : level === "4" ? 1.20 : level === "3" ? 1.18 : level === "2" ? 1.14 : 1.10;
+	let bright = level === "5" ? 10 : level === "4" ? 8 : level === "3" ? 6 : 4;
+	for (let i = 0; i < d.length; i += 4) {
+		let r = d[i], g = d[i + 1], b = d[i + 2];
+		r = (r - 128) * contrast + 128 + bright;
+		g = (g - 128) * contrast + 128 + bright + 2;
+		b = (b - 128) * contrast + 128 + bright + 5;
+		let avg = (r + g + b) / 3;
+		if (r > 90 && g > 60 && b > 50 && r > b) {
+			let sat = level === "5" ? 1.15 : level === "4" ? 1.12 : 1.10;
+			r = avg + (r - avg) * sat;
+			g = avg + (g - avg) * sat;
+			b = avg + (b - avg) * sat;
+			r = r * 1.04; g = g * 1.02; b = b * 1.01;
+		} else {
+			let sat = level === "5" ? 1.30 : level === "4" ? 1.25 : 1.20;
+			r = avg + (r - avg) * sat;
+			g = avg + (g - avg) * sat;
+			b = avg + (b - avg) * sat;
+		}
+		d[i] = Math.max(0, Math.min(255, r));
+		d[i + 1] = Math.max(0, Math.min(255, g));
+		d[i + 2] = Math.max(0, Math.min(255, b));
+	}
 }
 
-module.exports.run = async function ({ api, event, args }) {
+module.exports.run = async function({ api, event, args }) {
+	const { threadID, messageID, messageReply, attachments } = event;
+	let imageUrl = messageReply?.attachments?.[0]?.url || attachments?.[0]?.url;
 
-    const imageUrl = extractImageUrl(event);
+	if (!imageUrl) {
+		return api.sendMessage(
+			`» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑\n───────────────\n» 📸 𝗠𝗼𝗱𝗲𝗹: ${MODEL_VERSION}\n» 🌐 𝗔𝗣𝗜: api.badol.ai/v3/dslr\n\n» 📌 𝗨𝗦𝗔𝗚𝗘 𝗚𝗨𝗜𝗗𝗘:\n» ⚡ 4k = Auto Full HD 16K\n» ⚡ 4k 1 = Low HD\n» ⚡ 4k 2 = Natural HD\n» ⚡ 4k 3 = DSLR 4K\n» ⚡ 4k 4 = DSLR 8K\n» ⚡ 4k 5 = DSLR 16K Beautiful\n\n» 💡 𝗥𝗲𝗽𝗹𝘆 𝘁𝗼 𝗮 𝗽𝗵𝗼𝘁𝗼\n───────────────\n» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+			threadID,
+			messageID
+		);
+	}
 
-    if (!imageUrl)
-        return api.sendMessage("❌ Please reply to an image.", event.threadID, event.messageID);
+	let level = ["1", "2", "3", "4", "5"].includes(args[0]) ? args[0] : "5";
+	let levelName = level === "1" ? "LOW HD" : level === "2" ? "NATURAL HD" : level === "3" ? "DSLR 4K" : level === "4" ? "DSLR 8K ULTRA" : "DSLR 16K BEAUTIFUL";
+	let scale = level === "5" ? 2.8 : level === "4" ? 2.4 : level === "3" ? 2 : level === "2" ? 1.6 : 1.4;
 
-    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+	let processing = await api.sendMessage(
+		`» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑\n───────────────\n» 📸 𝗠𝗼𝗱𝗲: ${levelName}\n» 🌸 𝗡𝗼 𝗥𝗲𝗱 ✓ 𝗡𝗮𝘁𝘂𝗿𝗮𝗹 𝗦𝗸𝗶𝗻\n» ⏳ 𝗘𝗻𝗵𝗮𝗻𝗰𝗶𝗻𝗴...\n───────────────\n» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+		threadID
+	);
 
-    let tempFile;
+	const cacheDir = path.join(__dirname, "cache");
+	if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
 
-    try {
-        const fullApiUrl = `${API_ENDPOINT}?url=${encodeURIComponent(imageUrl)}`;
+	const fileName = `${Date.now()}`;
+	const inPath = path.join(cacheDir, `dslr_in_${fileName}.jpg`);
+	const outPath = path.join(cacheDir, `dslr_out_${fileName}.jpg`);
 
-        const apiRes = await axios.get(fullApiUrl);
-        const data = apiRes.data;
+	try {
+		const res = await axios.get(imageUrl, { responseType: "arraybuffer", timeout: 15000 });
+		fs.writeFileSync(inPath, Buffer.from(res.data));
 
-        if (!data.image)
-            throw new Error("API did not return image URL");
+		const img = await loadImage(inPath);
+		const canvas = createCanvas(Math.floor(img.width * scale), Math.floor(img.height * scale));
+		const ctx = canvas.getContext("2d");
 
-        const finalUrl = data.image;
+		ctx.imageSmoothingEnabled = true;
+		ctx.imageSmoothingQuality = "high";
+		ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        const imgStream = await axios.get(finalUrl, { responseType: "stream" });
+		let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		dslrEnhance(imageData.data, level);
+		ctx.putImageData(imageData, 0, 0);
 
-        const cache = path.join(__dirname, "/cache");
-        if (!fs.existsSync(cache)) fs.mkdirSync(cache);
+		fs.writeFileSync(outPath, canvas.toBuffer("image/jpeg", { quality: 0.96 }));
 
-        tempFile = path.join(cache, `4k_edit_${Date.now()}.jpg`);
+		try { api.unsendMessage(processing.messageID); } catch (e) {}
 
-        const writer = fs.createWriteStream(tempFile);
-        imgStream.data.pipe(writer);
+		await api.sendMessage({
+			body: `» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑\n───────────────\n» ✅ 𝗦𝘂𝗰𝗰𝗲𝘀𝘀: ${levelName}\n» 🌸 𝗡𝗼 𝗥𝗲𝗱 ✓ 𝗡𝗮𝘁𝘂𝗿𝗮𝗹 𝗦𝗸𝗶𝗻\n» 📐 ${img.width}x${img.height} ➔ ${canvas.width}x${canvas.height}\n» 👑 𝗔𝘂𝘁𝗵𝗼𝗿: 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍\n───────────────\n» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+			attachment: fs.createReadStream(outPath)
+		}, threadID, () => {
+			try { fs.unlinkSync(inPath); } catch (e) {}
+			try { fs.unlinkSync(outPath); } catch (e) {}
+		}, messageID);
 
-        await new Promise((resolve, reject) => {
-            writer.on("finish", resolve);
-            writer.on("error", reject);
-        });
-
-        api.setMessageReaction("✅", event.messageID, () => {}, true);
-
-        return api.sendMessage(
-            {
-                body: `✅𝐃𝐨𝐧𝐞`,
-                attachment: fs.createReadStream(tempFile)
-            },
-            event.threadID,
-            () => fs.unlinkSync(tempFile),
-            event.messageID
-        );
-
-    } catch (err) {
-        console.log("4K UPSCALE ERROR:", err);
-
-        api.setMessageReaction("❌", event.messageID, () => {}, true);
-
-        return api.sendMessage(
-            `❌ Error: ${err.message || "Something went wrong."}`,
-            event.threadID,
-            event.messageID
-        );
-    }
+	} catch (e) {
+		try { api.unsendMessage(processing.messageID); } catch (err) {}
+		return api.sendMessage(
+			`» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑\n───────────────\n» ❌ 𝗘𝗿𝗿𝗼𝗿: ${e.message}\n» 🔄 𝗣𝗹𝗲𝗮𝘀𝗲 𝗧𝗿𝘆 𝗔𝗴𝗮𝗶𝗻 𝗟𝗮𝘁𝗲𝗿.\n───────────────\n» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+			threadID,
+			messageID
+		);
+	}
 };
