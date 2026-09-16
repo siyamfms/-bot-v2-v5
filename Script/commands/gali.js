@@ -1,13 +1,13 @@
 const fs = require("fs");
 module.exports.config = {
 	name: "gali",
-    version: "1.0.1",
+	version: "1.0.1",
 	hasPermssion: 2,
-	credits: "𝐏𝐫𝐢𝐲𝐚𝐧𝐬𝐡 𝐑𝐚𝐣𝐩𝐮𝐭", //Modify by rX
-	description: "Don't Change Credits",
+	credits: "𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍",
+	description: "𝐍𝐈𝐉𝐇𝐔𝐌-𝐁𝐎𝐓 Command",
 	commandCategory: "no prefix",
 	usages: "mgi",
-    cooldowns: 5, 
+	cooldowns: 5, 
 };
 
 module.exports.handleEvent = function({ api, event, client, __GLOBAL }) {
@@ -18,7 +18,7 @@ module.exports.handleEvent = function({ api, event, client, __GLOBAL }) {
 				attachment: fs.createReadStream(__dirname + `/noprefix/nupure.mp3`)
 			}
 			api.sendMessage(msg, threadID, messageID);
-    api.setMessageReaction("😡", event.messageID, (err) => {}, true)
+		api.setMessageReaction("😡", event.messageID, (err) => {}, true)
 		}
 	}
 	module.exports.run = function({ api, event, client, __GLOBAL }) {
