@@ -1,53 +1,90 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+const FormData = require("form-data");
+
 module.exports.config = {
- name: "art",
- version: "1.0.0",
- hasPermssion: 0,
- credits: "🔰𝐑𝐀𝐇𝐀𝐓 𝐈𝐒𝐋𝐀𝐌🔰",
- description: "Apply AI art style (anime)",
- commandCategory: "editing",
- usages: "reply to an image",
- cooldowns: 5
+	name: "art",
+	version: "1.0.1",
+	hasPermssion: 0,
+	credits: "𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍",
+	description: "ছবিকে AI অ্যানিমে আর্ট স্টাইলে রূপান্তর করে",
+	commandCategory: "editing",
+	usages: "ছবিতে রিপ্লাই দিন",
+	cooldowns: 5
 };
 
 module.exports.run = async ({ api, event }) => {
- const axios = require('axios');
- const fs = require('fs-extra');
- const FormData = require('form-data');
- const path = __dirname + `/cache/artify.jpg`;
+	const { messageReply, threadID, messageID } = event;
 
- const { messageReply, threadID, messageID } = event;
+	if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
+		return api.sendMessage(
+			`» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑
+───────────────
+» ❌ অনুগ্রহ করে কোনো 
+» 🥱 একটি ছবির রিপ্লাই দিন!
+───────────────
+» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+			threadID,
+			messageID
+		);
+	}
 
- if (!messageReply || !messageReply.attachments || messageReply.attachments.length === 0) {
- return api.sendMessage("❌ অনুগ্রহ করে কোনো একটি ছবির রিপ্লাই দিন।", threadID, messageID);
- }
+	const imageUrl = messageReply.attachments[0].url;
+	const cacheDir = path.join(__dirname, "cache");
+	const cachePath = path.join(cacheDir, `artify_${Date.now()}.jpg`);
 
- const url = messageReply.attachments[0].url;
+	try {
+		await fs.ensureDir(cacheDir);
 
- try {
- // ডাউনলোড করে লোকাল সেভ
- const response = await axios.get(url, { responseType: "arraybuffer" });
- fs.writeFileSync(path, Buffer.from(response.data, "utf-8"));
+	
+		const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+		await fs.writeFile(cachePath, Buffer.from(response.data));
 
- // ফর্ম ডেটা তৈরি করে API তে পাঠানো
- const form = new FormData();
- form.append("image", fs.createReadStream(path));
+	
+		const form = new FormData();
+		form.append("image", fs.createReadStream(cachePath));
 
- const apiRes = await axios.post(
- "https://art-api-97wn.onrender.com/artify?style=anime",
- form,
- { headers: form.getHeaders(), responseType: "arraybuffer" }
- );
+		const apiRes = await axios.post(
+			"https://art-api-97wn.onrender.com/artify?style=anime",
+			form,
+			{ 
+				headers: form.getHeaders(), 
+				responseType: "arraybuffer" 
+			}
+		);
 
- // রেসপন্স সেভ করে পাঠানো
- fs.writeFileSync(path, apiRes.data);
+		// রেসপন্স সেভ করে পাঠানো
+		await fs.writeFile(cachePath, Buffer.from(apiRes.data));
 
- api.sendMessage({
- body: "✅ AI artify করা হয়েছে!",
- attachment: fs.createReadStream(path)
- }, threadID, () => fs.unlinkSync(path), messageID);
+		await api.sendMessage(
+			{
+				body: `» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑
+───────────────
+» ✅য়সফলভাবে করা হয়েছে!
+───────────────
+» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+				attachment: fs.createReadStream(cachePath)
+			},
+			threadID,
+			() => fs.unlinkSync(cachePath),
+			messageID
+		);
 
- } catch (err) {
- console.error(err);
- api.sendMessage("❌ কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।", threadID, messageID);
- }
+	} catch (err) {
+		console.error(err);
+		if (fs.existsSync(cachePath)) {
+			fs.unlinkSync(cachePath);
+		}
+		api.sendMessage(
+			`» 👑 𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍 👑
+───────────────
+» ❌ ছবি প্রসেস করতে 
+» 🤧 সমস্যা হয়েছে! 
+───────────────
+» 🧚‍♀️ ‿𝗡𝗜𝗝𝗛𝗨𝗠 𝗖𝗛𝗔𝗧𝗕𝗢𝗧`,
+			threadID,
+			messageID
+		);
+	}
 };
