@@ -76,7 +76,7 @@ module.exports = {
     name: "catbox",
     aliases: ["ct"],
     version: "2.0",
-    author: "Fixed by ChatGPT",
+    author: "𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍",
     countDown: 5,
     role: 0,
     shortDescription: "Upload media to catbox",
