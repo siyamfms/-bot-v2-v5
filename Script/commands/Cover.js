@@ -2,7 +2,7 @@ module.exports.config = {
   name: "cover",
   version: "1.0.1",
   hasPermssion: 0,
-  credits: "Anup Kumar",
+  credits: "𝐒𝐈𝐘𝐀𝐌-𝐇𝐀𝐒𝐀𝐍",
   description: "Create an interesting banner image",
   commandCategory: "Create a photo",
   usages: "cover [text1 - text2]",
@@ -10,8 +10,8 @@ module.exports.config = {
   dependencies: {
     canvas: "",
     axios: "",
-    "fs-extra": "",
-  },
+    "fs-extra": ""
+  }
 };
 
 module.exports.circle = async (image) => {
@@ -19,20 +19,20 @@ module.exports.circle = async (image) => {
   image = await jimp.read(image);
   image.circle();
   return await image.getBufferAsync("image/png");
-}
+};
+
 module.exports.run = async function ({ api, event, args, Users }) {
   let { senderID, threadID, messageID } = event;
   const { loadImage, createCanvas } = require("canvas");
-  const request = require('request');
   const fs = global.nodemodule["fs-extra"];
   const axios = global.nodemodule["axios"];
   let pathImg = __dirname + `/cache/${senderID}.png`;
   let pathAva = __dirname + `/cache/avtuser.png`;
-  let text = args.join(" ")
+  let text = args.join(" ");
   if (!text) return api.sendMessage('💢Please enter the correct format [text1 - text2] ', event.threadID, event.messageID);
   const text1 = text.substr(0, text.indexOf(' - ')); 
   if (!text1) return api.sendMessage('💢Please enter the correct format [text1 - text2] ', event.threadID, event.messageID);
-  const text2 = text.split(" - ").pop()
+  const text2 = text.split(" - ").pop();
   if (!text2) return api.sendMessage('💢Please enter the correct format [text1 - text2] ', event.threadID, event.messageID);
   let Avatar = (
     await axios.get(
@@ -46,7 +46,7 @@ module.exports.run = async function ({ api, event, args, Users }) {
     })
   ).data;
   fs.writeFileSync(pathAva, Buffer.from(Avatar, "utf-8"));
-  avatar = await this.circle(pathAva);
+  let avatar = await this.circle(pathAva);
   fs.writeFileSync(pathImg, Buffer.from(getWanted, "utf-8"));
   let baseImage = await loadImage(pathImg);
   let baseAva = await loadImage(avatar);
@@ -57,12 +57,10 @@ module.exports.run = async function ({ api, event, args, Users }) {
   ctx.font = "bold 70px Manrope";
   ctx.fillStyle = "#ffff";
   ctx.textAlign = "center";
-  fontSize = 40;
   ctx.fillText(text1, 965, 715);
   ctx.font = "55px Manrope";
   ctx.fillStyle = "#ffff";
   ctx.textAlign = "center";
-  fontSize = 20;
   ctx.fillText(text2, 965, 800);
   ctx.beginPath();
   const imageBuffer = canvas.toBuffer();
